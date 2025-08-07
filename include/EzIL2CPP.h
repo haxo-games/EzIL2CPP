@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include <string>
+#include <vector>
 
 #include <windows.h>
 
@@ -68,6 +69,24 @@ namespace EzIL2CPP
 
 			is_initialized = true;
 			return true;
+		}
+
+		std::vector<const char*> getAssemblyNames(void* p_domain)
+		{
+			if (!is_initialized)
+			{
+				setError("getAssemblyNames(): Resolver isn't initialized. Doing this will cause a crash.");
+				return {};
+			}
+
+			uint64_t assemblies_count;
+			std::vector<const char*> assembly_names;
+			Assembly** assemblies{ il2cpp_domain_get_assemblies(p_domain, &assemblies_count) };
+
+			for (uint64_t i{}; i < assemblies_count; i++)
+				assembly_names.push_back(assemblies[i]->p_image->name);
+
+			return assembly_names;
 		}
 
 		const std::string& getErrorMessage() const
