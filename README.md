@@ -8,6 +8,10 @@ A single-header C++ helper library to facilitate interaction with the IL2CPP API
 
 TODO
 
+## Documentation
+
+There isn't really any documentation regarding the IL2CPP API functions so I decided it could be useful to document them as best as we can here.
+
 ## Contributing
 
 This project is free and open source and will remain so forever. You are welcome to contribute. Simply make a pull request for whatever it is you would like to add, but

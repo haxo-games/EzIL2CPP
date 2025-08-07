@@ -10,15 +10,21 @@
 
 #pragma once
 
+#include <cstdint>
+
+#include <string>
+
 #include <windows.h>
 
 class EzIL2CPP
 {
 public:
 	void* (*il2cpp_domain_get)();
+	void* (*il2cpp_domain_get_assemblies)(void* p_domain, uint64_t* assembly_count);
 	void* (*il2cpp_domain_assembly_open)(void* p_domain, const char* name);
 	void* (*il2cpp_assembly_get_image)(void* p_assembly);
 	void* (*il2cpp_thread_attach)(void* p_domain);
+	void* (*il2cpp_thread_detach)(void* p_domain);
 	void* (*il2cpp_runtime_invoke)(void* p_method, void* p_object, void** params, void** exceptions);
 	void* (*il2cpp_class_from_name)(void* p_image, const char* namespaze, const char* name);
 	void* (*il2cpp_class_get_type)(void* p_class);
@@ -67,10 +73,10 @@ public:
 		return is_initialized;
 	}
 
-	void setError(std::string fmt, ...)
+	void setError(const char* fmt, ...)
 	{
 		/* Clear error if empty message */
-		if (fmt.size() == 0)
+		if (strlen(fmt) == 0)
 		{
 			has_error = false;
 			error_message.clear();
@@ -81,7 +87,7 @@ public:
 		va_start(args, fmt);
 
 		char* buf{ new char[0x1000] };
-		vsprintf_s(buf, 0x1000, fmt.c_str(), args);
+		vsprintf_s(buf, 0x1000, fmt, args);
 		error_message = buf;
 
 		delete[] buf;
@@ -112,6 +118,13 @@ private:
 		return nullptr;
 	}
 
+	template<typename T> 
+	inline void assignImport(T& p_function, IMAGE_EXPORT_DIRECTORY* p_export_directory, const char* target_export)
+	{
+		void* result{ resolveSingleImport(p_export_directory, target_export) };
+		p_function = reinterpret_cast<decltype(p_function)>(result);
+	}
+
 	bool resolveImports()
 	{
 		IMAGE_DOS_HEADER* p_dos_header{ reinterpret_cast<IMAGE_DOS_HEADER*>(h_game_assembly) };
@@ -137,17 +150,19 @@ private:
 		}
 
 		IMAGE_EXPORT_DIRECTORY* p_export_directory{ reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(reinterpret_cast<uintptr_t>(h_game_assembly) + p_nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress) };
-		il2cpp_domain_get = reinterpret_cast<void* (*)()>(resolveSingleImport(p_export_directory, "il2cpp_domain_get"));
-		il2cpp_domain_assembly_open = reinterpret_cast<void* (*)(void*, const char*)>(resolveSingleImport(p_export_directory, "il2cpp_domain_assembly_open"));
-		il2cpp_assembly_get_image = reinterpret_cast<void* (*)(void*)>(resolveSingleImport(p_export_directory, "il2cpp_assembly_get_image"));
-		il2cpp_thread_attach = reinterpret_cast<void* (*)(void*)>(resolveSingleImport(p_export_directory, "il2cpp_thread_attach"));
-		il2cpp_runtime_invoke = reinterpret_cast<void* (*)(void*, void*, void**, void**)>(resolveSingleImport(p_export_directory, "il2cpp_runtime_invoke"));
-		il2cpp_class_from_name = reinterpret_cast<void* (*)(void*, const char*, const char*)>(resolveSingleImport(p_export_directory, "il2cpp_class_from_name"));
-		il2cpp_class_get_type = reinterpret_cast<void* (*)(void*)>(resolveSingleImport(p_export_directory, "il2cpp_class_get_type"));
-		il2cpp_type_get_object = reinterpret_cast<void* (*)(void*)>(resolveSingleImport(p_export_directory, "il2cpp_type_get_object"));
-		il2cpp_class_get_method_from_name = reinterpret_cast<void* (*)(void*, const char*, int)>(resolveSingleImport(p_export_directory, "il2cpp_class_get_method_from_name"));
-		il2cpp_class_get_field_from_name = reinterpret_cast<void* (*)(void*, const char*)>(resolveSingleImport(p_export_directory, "il2cpp_class_get_field_from_name"));
-		il2cpp_field_get_value = reinterpret_cast<void*(*)(void*, void*, void*)>(resolveSingleImport(p_export_directory, "il2cpp_field_get_value"));
+		assignImport(il2cpp_domain_get, p_export_directory, "il2cpp_domain_get");
+		assignImport(il2cpp_domain_get_assemblies, p_export_directory, "il2cpp_domain_get_assemblies");
+		assignImport(il2cpp_domain_assembly_open, p_export_directory, "il2cpp_domain_assembly_open");
+		assignImport(il2cpp_assembly_get_image, p_export_directory, "il2cpp_assembly_get_image");
+		assignImport(il2cpp_thread_attach, p_export_directory, "il2cpp_thread_attach");
+		assignImport(il2cpp_thread_detach, p_export_directory, "il2cpp_thread_detach");
+		assignImport(il2cpp_runtime_invoke, p_export_directory, "il2cpp_runtime_invoke");
+		assignImport(il2cpp_class_from_name, p_export_directory, "il2cpp_class_from_name");
+		assignImport(il2cpp_class_get_type, p_export_directory, "il2cpp_class_get_type");
+		assignImport(il2cpp_type_get_object, p_export_directory, "il2cpp_type_get_object");
+		assignImport(il2cpp_class_get_method_from_name, p_export_directory, "il2cpp_class_get_method_from_name");
+		assignImport(il2cpp_class_get_field_from_name, p_export_directory, "il2cpp_class_get_field_from_name");
+		assignImport(il2cpp_field_get_value, p_export_directory, "il2cpp_field_get_value");
 
 		return true;
 	}
