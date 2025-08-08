@@ -22,6 +22,7 @@ namespace EzIL2CPP
 	struct Image
 	{
 		const char* name;
+		const char* name_no_ext;
 	};
 
 	struct Assembly
@@ -43,8 +44,11 @@ namespace EzIL2CPP
 		void* (*il2cpp_class_get_type)(void* p_class);
 		void* (*il2cpp_type_get_object)(void* p_type);
 		void* (*il2cpp_class_get_method_from_name)(void* p_class, const char* name, int args_count);
+		bool (*il2cpp_method_is_generic)(void* p_method);
 		void* (*il2cpp_class_get_field_from_name)(void* p_class, const char* iter);
 		void* (*il2cpp_field_get_value)(void* p_obj, void* p_field, void* p_value);
+		void* (*il2cpp_class_get_methods)(void* p_klass, void* iter);
+		const char* (*il2cpp_method_get_name)(void* p_method);
 
 		Resolver(HMODULE h_game_assembly)
 		{
@@ -192,8 +196,11 @@ namespace EzIL2CPP
 			assignImport(il2cpp_class_get_type, p_export_directory, "il2cpp_class_get_type");
 			assignImport(il2cpp_type_get_object, p_export_directory, "il2cpp_type_get_object");
 			assignImport(il2cpp_class_get_method_from_name, p_export_directory, "il2cpp_class_get_method_from_name");
+			assignImport(il2cpp_method_is_generic, p_export_directory, "il2cpp_method_is_generic");
 			assignImport(il2cpp_class_get_field_from_name, p_export_directory, "il2cpp_class_get_field_from_name");
 			assignImport(il2cpp_field_get_value, p_export_directory, "il2cpp_field_get_value");
+			assignImport(il2cpp_class_get_methods, p_export_directory, "il2cpp_class_get_methods");
+			assignImport(il2cpp_method_get_name, p_export_directory, "il2cpp_method_get_name");
 
 			return true;
 		}
