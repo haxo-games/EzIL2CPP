@@ -33,22 +33,24 @@ namespace EzIL2CPP
 	class Resolver
 	{
 	public:
-		void* (*il2cpp_domain_get)();
-		Assembly** (*il2cpp_domain_get_assemblies)(void* p_domain, uint64_t* p_assembly_count);
-		Assembly* (*il2cpp_domain_assembly_open)(void* p_domain, const char* name);
-		Image* (*il2cpp_assembly_get_image)(void* p_assembly);
-		void* (*il2cpp_thread_attach)(void* p_domain);
-		void* (*il2cpp_thread_detach)(void* p_domain);
-		void* (*il2cpp_runtime_invoke)(void* p_method, void* p_object, void** params, void** exceptions);
-		void* (*il2cpp_class_from_name)(void* p_image, const char* namespaze, const char* name);
-		void* (*il2cpp_class_get_type)(void* p_class);
-		void* (*il2cpp_type_get_object)(void* p_type);
-		void* (*il2cpp_class_get_method_from_name)(void* p_class, const char* name, int args_count);
-		bool (*il2cpp_method_is_generic)(void* p_method);
-		void* (*il2cpp_class_get_field_from_name)(void* p_class, const char* iter);
-		void* (*il2cpp_field_get_value)(void* p_obj, void* p_field, void* p_value);
-		void* (*il2cpp_class_get_methods)(void* p_klass, void* iter);
-		const char* (*il2cpp_method_get_name)(void* p_method);
+		void*(*il2cpp_domain_get)();
+		Assembly**(*il2cpp_domain_get_assemblies)(void* p_domain, uint64_t* p_assembly_count);
+		Assembly*(*il2cpp_domain_assembly_open)(void* p_domain, const char* name);
+		Image*(*il2cpp_assembly_get_image)(void* p_assembly);
+		void*(*il2cpp_thread_attach)(void* p_domain);
+		void*(*il2cpp_thread_detach)(void* p_domain);
+		void*(*il2cpp_runtime_invoke)(void* p_method, void* p_object, void** params, void** exceptions);
+		void*(*il2cpp_class_from_name)(void* p_image, const char* namespaze, const char* name);
+		void*(*il2cpp_class_get_type)(void* p_class);
+		void*(*il2cpp_type_get_object)(void* p_type);
+		void*(*il2cpp_class_get_method_from_name)(void* p_class, const char* name, int args_count);
+		bool(*il2cpp_method_is_generic)(void* p_method);
+		void*(*il2cpp_class_get_field_from_name)(void* p_class, const char* iter);
+		void*(*il2cpp_field_get_value)(void* p_obj, void* p_field, void* p_value);
+		void*(*il2cpp_class_get_methods)(void* p_klass, void* iter);
+		const char*(*il2cpp_method_get_name)(void* p_method);
+		int(*il2cpp_method_get_param_count)(void* p_method);
+		uint32_t(*il2cpp_method_get_flags)(void* p_method);
 
 		Resolver(HMODULE h_game_assembly)
 		{
@@ -91,6 +93,18 @@ namespace EzIL2CPP
 				assembly_names.push_back(assemblies[i]->p_image->name);
 
 			return assembly_names;
+		}
+
+		void getClassMethods(void* p_klass)
+		{
+			void* iter{};
+			void* p_method{};
+			while ((p_method = il2cpp_class_get_methods(p_klass, &iter)) != nullptr)
+			{
+				const char* method_name{ il2cpp_method_get_name(p_method) };
+
+				
+			}
 		}
 
 		const std::string& getErrorMessage() const
@@ -201,6 +215,8 @@ namespace EzIL2CPP
 			assignImport(il2cpp_field_get_value, p_export_directory, "il2cpp_field_get_value");
 			assignImport(il2cpp_class_get_methods, p_export_directory, "il2cpp_class_get_methods");
 			assignImport(il2cpp_method_get_name, p_export_directory, "il2cpp_method_get_name");
+			assignImport(il2cpp_method_get_param_count, p_export_directory, "il2cpp_method_get_param_count");
+			assignImport(il2cpp_method_get_flags, p_export_directory, "il2cpp_method_get_flags");
 
 			return true;
 		}
