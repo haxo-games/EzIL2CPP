@@ -146,7 +146,7 @@ namespace EzIL2CPP
 					void* p_param_type{ il2cpp_method_get_param(p_method, i) };
 					const char* param_type_name{ il2cpp_type_get_name(p_param_type) };
 
-					custom_method_info.arguments.push_back({ param_name, param_type_name });
+					custom_method_info.arguments.push_back({ param_name, param_type_name ? param_type_name : "void" });
 				}
 			}
 
