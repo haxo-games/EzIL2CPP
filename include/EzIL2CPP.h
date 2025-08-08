@@ -30,6 +30,22 @@ namespace EzIL2CPP
 		Image* p_image;
 	};
 
+	struct CustomMethodInfo
+	{
+		struct Argument
+		{
+			const char* name;
+			const char* type;
+		};
+
+		void* p_method;
+		const char* name;
+		bool is_generic;
+		uint32_t flags;
+		const char* return_type;
+		std::vector<Argument> arguments;
+	};
+
 	class Resolver
 	{
 	public:
@@ -49,8 +65,12 @@ namespace EzIL2CPP
 		void*(*il2cpp_field_get_value)(void* p_obj, void* p_field, void* p_value);
 		void*(*il2cpp_class_get_methods)(void* p_klass, void* iter);
 		const char*(*il2cpp_method_get_name)(void* p_method);
-		int(*il2cpp_method_get_param_count)(void* p_method);
+		uint32_t(*il2cpp_method_get_param_count)(void* p_method);
 		uint32_t(*il2cpp_method_get_flags)(void* p_method);
+		const char*(*il2cpp_method_get_param_name)(void* p_method, uint32_t param_index);
+		void*(*il2cpp_method_get_return_type)(void* p_method);
+		const char*(*il2cpp_type_get_name)(void* p_type);
+		void*(*il2cpp_method_get_param)(void* p_method, uint32_t param_index);
 
 		Resolver(HMODULE h_game_assembly)
 		{
@@ -95,16 +115,42 @@ namespace EzIL2CPP
 			return assembly_names;
 		}
 
-		void getClassMethods(void* p_klass)
+		std::vector<CustomMethodInfo> getClassMethods(void* p_klass)
 		{
+			if (!is_initialized)
+			{
+				setError("getClassMethods(): Resolver isn't initialized. Doing this will cause a crash.");
+				return {};
+			}
+
+			std::vector<CustomMethodInfo> methods;
+
 			void* iter{};
 			void* p_method{};
 			while ((p_method = il2cpp_class_get_methods(p_klass, &iter)) != nullptr)
 			{
 				const char* method_name{ il2cpp_method_get_name(p_method) };
+				bool is_method_generic{ il2cpp_method_is_generic(p_method) };
+				uint32_t method_flags{ il2cpp_method_get_flags(p_method) };
+				uint32_t params_count{ il2cpp_method_get_param_count(p_method) };
+				void* p_return_type{ il2cpp_method_get_return_type(p_method) };
+				const char* return_type_name{ il2cpp_type_get_name(p_return_type) };
 
-				
+				methods.push_back({ p_method, method_name, is_method_generic, method_flags, return_type_name ? return_type_name : "void" });
+				CustomMethodInfo& custom_method_info{ methods.back() };
+
+				custom_method_info.arguments.resize(params_count);
+				for (uint32_t i{}; i < params_count; i++)
+				{
+					const char* param_name{ il2cpp_method_get_param_name(p_method, i) };
+					void* p_param_type{ il2cpp_method_get_param(p_method, i) };
+					const char* param_type_name{ il2cpp_type_get_name(p_param_type) };
+
+					custom_method_info.arguments.push_back({ param_name, param_type_name });
+				}
 			}
+
+			return methods;
 		}
 
 		const std::string& getErrorMessage() const
@@ -217,6 +263,10 @@ namespace EzIL2CPP
 			assignImport(il2cpp_method_get_name, p_export_directory, "il2cpp_method_get_name");
 			assignImport(il2cpp_method_get_param_count, p_export_directory, "il2cpp_method_get_param_count");
 			assignImport(il2cpp_method_get_flags, p_export_directory, "il2cpp_method_get_flags");
+			assignImport(il2cpp_method_get_param_name, p_export_directory, "il2cpp_method_get_param_name");
+			assignImport(il2cpp_method_get_return_type, p_export_directory, "il2cpp_method_get_return_type");
+			assignImport(il2cpp_type_get_name, p_export_directory, "il2cpp_type_get_name");
+			assignImport(il2cpp_method_get_param, p_export_directory, "il2cpp_method_get_param");
 
 			return true;
 		}
