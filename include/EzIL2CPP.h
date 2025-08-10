@@ -243,7 +243,7 @@ namespace EzIL2CPP
 							ss << "                        {\n";
 
 							ss << "                            \"name\": \"" << classes[j].methods[k].arguments[l].name << "\",\n";
-							ss << "                            \"type\": \"" << classes[j].methods[k].arguments[l].type << "\",\n";
+							ss << "                            \"type\": \"" << classes[j].methods[k].arguments[l].type << "\"\n";
 
 							ss << "                        }" << (l < classes[j].methods[k].arguments.size() - 1 ? ", \n" : "\n");
 						}
