@@ -11,6 +11,7 @@ A single-header C++ helper library to facilitate interaction with the IL2CPP API
 `Resolver` is a class you can instantiate and initialize through its constructor by passing the address of the `GameAssembly.dll` binary. Under the hood it contains a bunch of function pointers which it initializes 
 by walking through the exports within this same module. You can then call these IL2CPP API functions by simply invoking them by their name (they are named identically to their export).
 <br />
+<br />
 On top of the "imported" IL2CPP API functions the class contains some useful utilities:
 - `getAssemblyNames(void* p_domain)`: Returns a list of strings of all the assemblies.
 - `getClassFields(void* p_klass)`: Returns a list of `CustomFieldInfo` for the provided class.
