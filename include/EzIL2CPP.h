@@ -34,8 +34,8 @@ namespace EzIL2CPP
 	{
 		struct Argument
 		{
-			const char* name;
-			const char* type;
+			std::string name;
+			std::string type;
 		};
 
 		void* p_method;
@@ -139,7 +139,6 @@ namespace EzIL2CPP
 				methods.push_back({ p_method, method_name, is_method_generic, method_flags, return_type_name ? return_type_name : "void" });
 				CustomMethodInfo& custom_method_info{ methods.back() };
 
-				custom_method_info.arguments.resize(params_count);
 				for (uint32_t i{}; i < params_count; i++)
 				{
 					const char* param_name{ il2cpp_method_get_param_name(p_method, i) };
