@@ -17,6 +17,8 @@
 
 #include <windows.h>
 
+#define AssignImport(import_name) assignImport(import_name, p_export_directory, #import_name);
+
 namespace EzIL2CPP
 {
 	struct Image
@@ -72,6 +74,8 @@ namespace EzIL2CPP
 		void*(*il2cpp_method_get_return_type)(void* p_method);
 		const char*(*il2cpp_type_get_name)(void* p_type);
 		void*(*il2cpp_method_get_param)(void* p_method, uint32_t param_index);
+		uint64_t(*il2cpp_image_get_class_count)(Image* p_image);
+		void*(*il2cpp_image_get_class)(Image* p_image, uint32_t klass_index);
 
 		Resolver(HMODULE h_game_assembly)
 		{
@@ -114,6 +118,11 @@ namespace EzIL2CPP
 				assembly_names.push_back(assemblies[i]->p_image->name);
 
 			return assembly_names;
+		}
+
+		void getAssemblyImageClasses(Image* p_image)
+		{
+
 		}
 
 		std::vector<CustomMethodInfo> getClassMethods(void* p_klass)
@@ -245,29 +254,31 @@ namespace EzIL2CPP
 			}
 
 			IMAGE_EXPORT_DIRECTORY* p_export_directory{ reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(reinterpret_cast<uintptr_t>(h_game_assembly) + p_nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress) };
-			assignImport(il2cpp_domain_get, p_export_directory, "il2cpp_domain_get");
-			assignImport(il2cpp_domain_get_assemblies, p_export_directory, "il2cpp_domain_get_assemblies");
-			assignImport(il2cpp_domain_assembly_open, p_export_directory, "il2cpp_domain_assembly_open");
-			assignImport(il2cpp_assembly_get_image, p_export_directory, "il2cpp_assembly_get_image");
-			assignImport(il2cpp_thread_attach, p_export_directory, "il2cpp_thread_attach");
-			assignImport(il2cpp_thread_detach, p_export_directory, "il2cpp_thread_detach");
-			assignImport(il2cpp_runtime_invoke, p_export_directory, "il2cpp_runtime_invoke");
-			assignImport(il2cpp_class_from_name, p_export_directory, "il2cpp_class_from_name");
-			assignImport(il2cpp_class_get_type, p_export_directory, "il2cpp_class_get_type");
-			assignImport(il2cpp_type_get_object, p_export_directory, "il2cpp_type_get_object");
-			assignImport(il2cpp_class_get_method_from_name, p_export_directory, "il2cpp_class_get_method_from_name");
-			assignImport(il2cpp_method_is_generic, p_export_directory, "il2cpp_method_is_generic");
-			assignImport(il2cpp_class_get_field_from_name, p_export_directory, "il2cpp_class_get_field_from_name");
-			assignImport(il2cpp_field_get_value, p_export_directory, "il2cpp_field_get_value");
-			assignImport(il2cpp_field_set_value, p_export_directory, "il2cpp_field_set_value");
-			assignImport(il2cpp_class_get_methods, p_export_directory, "il2cpp_class_get_methods");
-			assignImport(il2cpp_method_get_name, p_export_directory, "il2cpp_method_get_name");
-			assignImport(il2cpp_method_get_param_count, p_export_directory, "il2cpp_method_get_param_count");
-			assignImport(il2cpp_method_get_flags, p_export_directory, "il2cpp_method_get_flags");
-			assignImport(il2cpp_method_get_param_name, p_export_directory, "il2cpp_method_get_param_name");
-			assignImport(il2cpp_method_get_return_type, p_export_directory, "il2cpp_method_get_return_type");
-			assignImport(il2cpp_type_get_name, p_export_directory, "il2cpp_type_get_name");
-			assignImport(il2cpp_method_get_param, p_export_directory, "il2cpp_method_get_param");
+			AssignImport(il2cpp_domain_get);
+			AssignImport(il2cpp_domain_get_assemblies);
+			AssignImport(il2cpp_domain_assembly_open);
+			AssignImport(il2cpp_assembly_get_image);
+			AssignImport(il2cpp_thread_attach);
+			AssignImport(il2cpp_thread_detach);
+			AssignImport(il2cpp_runtime_invoke);
+			AssignImport(il2cpp_class_from_name);
+			AssignImport(il2cpp_class_get_type);
+			AssignImport(il2cpp_type_get_object);
+			AssignImport(il2cpp_class_get_method_from_name);
+			AssignImport(il2cpp_method_is_generic);
+			AssignImport(il2cpp_class_get_field_from_name);
+			AssignImport(il2cpp_field_get_value);
+			AssignImport(il2cpp_field_set_value);
+			AssignImport(il2cpp_class_get_methods);
+			AssignImport(il2cpp_method_get_name);
+			AssignImport(il2cpp_method_get_param_count);
+			AssignImport(il2cpp_method_get_flags);
+			AssignImport(il2cpp_method_get_param_name);
+			AssignImport(il2cpp_method_get_return_type);
+			AssignImport(il2cpp_type_get_name);
+			AssignImport(il2cpp_method_get_param);
+			AssignImport(il2cpp_image_get_class_count);
+			AssignImport(il2cpp_image_get_class);
 
 			return true;
 		}
