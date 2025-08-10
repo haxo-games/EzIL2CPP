@@ -14,6 +14,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <windows.h>
 
@@ -32,6 +33,14 @@ namespace EzIL2CPP
 		Image* p_image;
 	};
 
+	struct Class
+	{
+		char _0[0x10];
+		char const* name;
+		char const* namespaze;
+		void* field_20;
+	};
+
 	struct CustomMethodInfo
 	{
 		struct Argument
@@ -41,11 +50,19 @@ namespace EzIL2CPP
 		};
 
 		void* p_method;
-		const char* name;
+		std::string name;
 		bool is_generic;
 		uint32_t flags;
-		const char* return_type;
+		std::string return_type;
 		std::vector<Argument> arguments;
+	};
+
+	struct CustomClassInfo
+	{
+		void* p_klass;
+		std::string name;
+		std::string namespaze;
+		std::vector<CustomMethodInfo> methods;
 	};
 
 	class Resolver
@@ -69,13 +86,15 @@ namespace EzIL2CPP
 		void*(*il2cpp_class_get_methods)(void* p_klass, void* iter);
 		const char*(*il2cpp_method_get_name)(void* p_method);
 		uint32_t(*il2cpp_method_get_param_count)(void* p_method);
-		uint32_t(*il2cpp_method_get_flags)(void* p_method);
+		uint32_t(*il2cpp_method_get_flags)(void* p_method, uint32_t* p_flags_out);
 		const char*(*il2cpp_method_get_param_name)(void* p_method, uint32_t param_index);
 		void*(*il2cpp_method_get_return_type)(void* p_method);
 		const char*(*il2cpp_type_get_name)(void* p_type);
 		void*(*il2cpp_method_get_param)(void* p_method, uint32_t param_index);
 		uint64_t(*il2cpp_image_get_class_count)(Image* p_image);
 		void*(*il2cpp_image_get_class)(Image* p_image, uint32_t klass_index);
+		const char*(*il2cpp_class_get_namespace)(void* p_class);
+		const char*(*il2cpp_class_get_name)(void* p_class);
 
 		Resolver(HMODULE h_game_assembly)
 		{
@@ -120,11 +139,6 @@ namespace EzIL2CPP
 			return assembly_names;
 		}
 
-		void getAssemblyImageClasses(Image* p_image)
-		{
-
-		}
-
 		std::vector<CustomMethodInfo> getClassMethods(void* p_klass)
 		{
 			if (!is_initialized)
@@ -141,7 +155,10 @@ namespace EzIL2CPP
 			{
 				const char* method_name{ il2cpp_method_get_name(p_method) };
 				bool is_method_generic{ il2cpp_method_is_generic(p_method) };
-				uint32_t method_flags{ il2cpp_method_get_flags(p_method) };
+
+				uint32_t method_flags{};
+				il2cpp_method_get_flags(p_method, &method_flags);
+
 				uint32_t params_count{ il2cpp_method_get_param_count(p_method) };
 				void* p_return_type{ il2cpp_method_get_return_type(p_method) };
 				const char* return_type_name{ il2cpp_type_get_name(p_return_type) };
@@ -155,11 +172,96 @@ namespace EzIL2CPP
 					void* p_param_type{ il2cpp_method_get_param(p_method, i) };
 					const char* param_type_name{ il2cpp_type_get_name(p_param_type) };
 
-					custom_method_info.arguments.push_back({ param_name, param_type_name ? param_type_name : "void" });
+					custom_method_info.arguments.push_back({ param_name ? param_name : "param_" + std::to_string(i), param_type_name ? param_type_name : "void"});
 				}
 			}
 
 			return methods;
+		}
+
+		std::vector<CustomClassInfo> getAssemblyImageClasses(Image* p_image)
+		{
+			if (!is_initialized)
+			{
+				setError("getAssemblyImageClasses(): Resolver isn't initialized. Doing this will cause a crash.");
+				return {};
+			}
+
+			uint64_t classes_count{ il2cpp_image_get_class_count(p_image) };
+			std::vector<CustomClassInfo> classes;
+
+			for (uint64_t i{}; i < classes_count; i++)
+			{
+				void* p_class{ il2cpp_image_get_class(p_image, i) };
+				const char* class_name{ il2cpp_class_get_name(p_class) };
+				const char* class_namespase{ il2cpp_class_get_namespace(p_class) };
+
+				classes.push_back({ p_class, class_name, class_namespase });
+
+				CustomClassInfo& custom_class_info{ classes.back() };
+				custom_class_info.methods = getClassMethods(p_class);
+			}
+
+			return classes;
+		}
+
+		std::string jsonifyRuntimeData(void* p_domain)
+		{
+			std::stringstream ss;
+
+			ss << "{\n";
+
+			auto assembly_names{ getAssemblyNames(p_domain) };
+			for (int i{}; i < assembly_names.size(); i++)
+			{
+				ss << "    \"" << assembly_names[i] << "\": {\n";
+
+				Assembly* p_assembly{ il2cpp_domain_assembly_open(p_domain, assembly_names[i]) };
+				Image* p_image{ il2cpp_assembly_get_image(p_assembly) };
+				auto classes{ getAssemblyImageClasses(p_image) };
+
+				for (int j{}; j < classes.size(); j++)
+				{
+					ss << "        \"" << classes[j].name << "\": {\n";
+
+					ss << "            \"namespace\": \"" << classes[j].namespaze << "\",\n";
+					ss << "            \"fields\": [\n";
+					// TODO
+					ss << "            ],\n";
+
+					ss << "            \"methods\": [\n";
+					for (int k{}; k < classes[j].methods.size(); k++)
+					{
+						ss << "                {\n";
+
+						ss << "                    \"name\": \"" << classes[j].methods[k].name << "\",\n";
+						ss << "                    \"return_type\": \"" << classes[j].methods[k].return_type << "\",\n";
+						ss << "                    \"is_generic\": " << (classes[j].methods[k].is_generic ? "true" : "false") << ",\n";
+						ss << "                    \"arguments\": [\n";
+						for (int l{}; l < classes[j].methods[k].arguments.size(); l++)
+						{
+							ss << "                        {\n";
+
+							ss << "                            \"name\": \"" << classes[j].methods[k].arguments[l].name << "\",\n";
+							ss << "                            \"type\": \"" << classes[j].methods[k].arguments[l].type << "\",\n";
+
+							ss << "                        }" << (l < classes[j].methods[k].arguments.size() - 1 ? ", \n" : "\n");
+						}
+						ss << "                    ]\n";
+
+						ss << "                }" << (k < classes[j].methods.size() - 1 ? ", \n" : "\n");
+					}
+					ss << "            ]\n";
+
+					ss << "        }" << (j < classes.size() - 1 ? ", \n" : "\n");
+				}
+
+				ss << "    }" << (i < assembly_names.size() - 1 ? ",\n" : "\n");
+			}
+
+			ss << "}";
+
+			return ss.str();
 		}
 
 		const std::string& getErrorMessage() const
@@ -279,6 +381,8 @@ namespace EzIL2CPP
 			AssignImport(il2cpp_method_get_param);
 			AssignImport(il2cpp_image_get_class_count);
 			AssignImport(il2cpp_image_get_class);
+			AssignImport(il2cpp_class_get_namespace);
+			AssignImport(il2cpp_class_get_name);
 
 			return true;
 		}
