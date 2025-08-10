@@ -6,7 +6,21 @@ A single-header C++ helper library to facilitate interaction with the IL2CPP API
 
 ## Usage
 
-TODO
+### `Resolver`
+
+`Resolver` is a class you can instantiate and initialize through its constructor by passing the address of the `GameAssembly.dll` binary. Under the hood it contains a bunch of function pointers which it initializes 
+by walking through the exports within this same module. You can then call these IL2CPP API functions by simply invoking them by their name (they are named identically to their export).
+<br />
+<br />
+On top of the "imported" IL2CPP API functions the class contains some useful utilities:
+- `getAssemblyNames(void* p_domain)`: Returns a list of strings of all the assemblies.
+- `getClassFields(void* p_klass)`: Returns a list of `CustomFieldInfo` for the provided class.
+- `getClassMethods(void* p_klass)`: Returns a list of `CustomMethodInfo` for the provided class.
+- `getAssemblyImageClasses(Image* p_image)`: Returns a list of `CustomClassInfo` for the provided assembly image.
+- `jsonifyRuntimeData(void* p_domain)`: Returns a JSON-formatted string containing all the different assemblies and their classes with their methods and fields. Useful if you're dealing with a game that obfuscates
+its global metadata file.
+- `getErrorMessage()`: If anything goes wrong anywhere an error message string is set which you can read by getting its reference from this method.
+- `getHasError()`: Indicates whether something went wrong or not.
 
 ## Documentation
 
