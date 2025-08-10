@@ -41,6 +41,18 @@ namespace EzIL2CPP
 		void* field_20;
 	};
 
+	struct CustomFieldInfo
+	{
+		void* p_field;
+		std::string name;
+		std::string type;
+		bool is_static;
+		bool is_public;
+		bool is_private;
+		bool is_protected;
+		bool is_internal;
+	};
+
 	struct CustomMethodInfo
 	{
 		struct Argument
@@ -52,7 +64,11 @@ namespace EzIL2CPP
 		void* p_method;
 		std::string name;
 		bool is_generic;
-		uint32_t flags;
+		bool is_static;
+		bool is_public;
+		bool is_private;
+		bool is_protected;
+		bool is_internal;
 		std::string return_type;
 		std::vector<Argument> arguments;
 	};
@@ -62,6 +78,7 @@ namespace EzIL2CPP
 		void* p_klass;
 		std::string name;
 		std::string namespaze;
+		std::vector<CustomFieldInfo> fields;
 		std::vector<CustomMethodInfo> methods;
 	};
 
@@ -95,6 +112,10 @@ namespace EzIL2CPP
 		void*(*il2cpp_image_get_class)(Image* p_image, uint32_t klass_index);
 		const char*(*il2cpp_class_get_namespace)(void* p_class);
 		const char*(*il2cpp_class_get_name)(void* p_class);
+		void*(*il2cpp_class_get_fields)(void* p_klass, void* iter);
+		uint64_t(*il2cpp_field_get_flags)(void* p_field);
+		void*(*il2cpp_field_get_type)(void* p_field);
+		const char* (*il2cpp_field_get_name)(void* p_field);
 
 		Resolver(HMODULE h_game_assembly)
 		{
@@ -139,6 +160,38 @@ namespace EzIL2CPP
 			return assembly_names;
 		}
 
+		std::vector<CustomFieldInfo> getClassFields(void* p_klass)
+		{
+			if (!is_initialized)
+			{
+				setError("getClassFields(): Resolver isn't initialized. Doing this will cause a crash.");
+				return {};
+			}
+
+			std::vector<CustomFieldInfo> fields;
+
+			void* iter{};
+			void* p_field{};
+			while ((p_field = il2cpp_class_get_fields(p_klass, &iter)) != nullptr)
+			{
+				const char* field_name{ il2cpp_field_get_name(p_field) };
+				void* p_field_type{ il2cpp_field_get_type(p_field) };
+				const char* field_type_name{ il2cpp_type_get_name(p_field_type) };
+
+				uint64_t field_flags{ il2cpp_field_get_flags(p_field) };
+
+				bool is_static{ (bool)(field_flags & 0x0010) };
+				bool is_public{ (bool)(field_flags & 0x0001) };
+				bool is_private{ (bool)(field_flags & 0x0002) };
+				bool is_protected{ (bool)(field_flags & 0x0004) };
+				bool is_internal{ (bool)(field_flags & 0x0008) };
+
+				fields.push_back({ p_field, field_name ? field_name : "unknown", field_type_name ? field_type_name : "void", is_static, is_public, is_private, is_protected, is_internal });
+			}
+
+			return fields;
+		}
+
 		std::vector<CustomMethodInfo> getClassMethods(void* p_klass)
 		{
 			if (!is_initialized)
@@ -162,8 +215,13 @@ namespace EzIL2CPP
 				uint32_t params_count{ il2cpp_method_get_param_count(p_method) };
 				void* p_return_type{ il2cpp_method_get_return_type(p_method) };
 				const char* return_type_name{ il2cpp_type_get_name(p_return_type) };
+				bool is_static{ (bool)(method_flags & 0x0010) };
+				bool is_public{ (bool)(method_flags & 0x0001) };
+				bool is_private{ (bool)(method_flags & 0x0002) };
+				bool is_protected{ (bool)(method_flags & 0x0004) };
+				bool is_internal{ (bool)(method_flags & 0x0008) };
 
-				methods.push_back({ p_method, method_name, is_method_generic, method_flags, return_type_name ? return_type_name : "void" });
+				methods.push_back({ p_method, method_name, is_method_generic, is_static, is_public, is_private, is_protected, is_internal, return_type_name ? return_type_name : "void" });
 				CustomMethodInfo& custom_method_info{ methods.back() };
 
 				for (uint32_t i{}; i < params_count; i++)
@@ -199,6 +257,7 @@ namespace EzIL2CPP
 				classes.push_back({ p_class, class_name, class_namespase });
 
 				CustomClassInfo& custom_class_info{ classes.back() };
+				custom_class_info.fields = getClassFields(p_class);
 				custom_class_info.methods = getClassMethods(p_class);
 			}
 
@@ -226,7 +285,20 @@ namespace EzIL2CPP
 
 					ss << "            \"namespace\": \"" << classes[j].namespaze << "\",\n";
 					ss << "            \"fields\": [\n";
-					// TODO
+					for (int k{}; k < classes[j].fields.size(); k++)
+					{
+						ss << "                {\n";
+
+						ss << "                    \"name\": \"" << classes[j].fields[k].name << "\",\n";
+						ss << "                    \"type\": \"" << classes[j].fields[k].type << "\",\n";
+						ss << "                    \"is_static\": " << (classes[j].fields[k].is_static ? "true" : "false") << ",\n";
+						ss << "                    \"is_public\": " << (classes[j].fields[k].is_public ? "true" : "false") << ",\n";
+						ss << "                    \"is_private\": " << (classes[j].fields[k].is_private ? "true" : "false") << ",\n";
+						ss << "                    \"is_protected\": " << (classes[j].fields[k].is_protected ? "true" : "false") << ",\n";
+						ss << "                    \"is_internal\": " << (classes[j].fields[k].is_internal ? "true" : "false") << "\n";
+
+						ss << "                }" << (k < classes[j].fields.size() - 1 ? ", \n" : "\n");
+					}
 					ss << "            ],\n";
 
 					ss << "            \"methods\": [\n";
@@ -383,6 +455,10 @@ namespace EzIL2CPP
 			AssignImport(il2cpp_image_get_class);
 			AssignImport(il2cpp_class_get_namespace);
 			AssignImport(il2cpp_class_get_name);
+			AssignImport(il2cpp_class_get_fields);
+			AssignImport(il2cpp_field_get_flags);
+			AssignImport(il2cpp_field_get_name);
+			AssignImport(il2cpp_field_get_type);
 
 			return true;
 		}
