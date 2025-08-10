@@ -2,7 +2,7 @@
 // |  ____|   |_   _| |    |__ \ / ____|  __ \|  __ \ 
 // | |__   ____ | | | |       ) | |    | |__) | |__) |
 // |  __| |_  / | | | |      / /| |    |  ___/|  ___/   Single-header C++ helper to interact with the IL2CPP API
-// | |____ / / _| |_| |____ / /_| |____| |    | |       version 0.0.0
+// | |____ / / _| |_| |____ / /_| |____| |    | |       version 0.1.0
 // |______/___|_____|______|____|\_____|_|    |_|       https://github.com/haxo-games/EzIL2CPP
 //
 // SPDX-FileCopyrightText: 2024 - 2025 Haxo Games Inc. <https://haxo.games>
